@@ -115,7 +115,8 @@ if (Data_to_binulator == 'yes'):
     plt.savefig(outdir + gal_name + '.pdf')
     plt.show()    
     exit(0)
-    
+
+    ####################################################################################################################
     
     Data_phot = pd.DataFrame({ 'R': Data['R'], 'Dens': Data['Dens'] })
     Data_phot.to_csv(outdir + gal_name + '_phot.csv')
