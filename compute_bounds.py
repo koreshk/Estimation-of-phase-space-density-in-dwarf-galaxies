@@ -23,8 +23,8 @@ infile = 'output_M200vals.txt'
 data = np.genfromtxt(outdir+infile, dtype = 'f8')
 M_DM = data[0] * 1e57
 
-infile = 'graph_vLOS_fit.txt'
-#infile = 'sigma_DM.txt'
+#infile = 'graph_vLOS_fit.txt'
+infile = 'sigma_DM.txt'
 data = np.genfromtxt(outdir+infile, dtype = 'f8')
 rbin = data[:,0]
 sigp_int = np.transpose(data[:,1:8])
