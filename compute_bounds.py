@@ -6,8 +6,9 @@ from scipy.integrate import simps as integrator
 from numpy import pi
 from scipy.optimize import root, bisect
 import pandas as pd
+from scipy.optimize import curve_fit as fit
 
-whichgal = 'Sculptor_Dwarf_Galaxy'
+whichgal = 'Fornax_Dwarf_Spheroidal'
 outdir = './gravsphere-master/results from cluster/' + whichgal + '/CosmoC/'
 
 T_0 = 2.7255 #температура реликтовых фотонов (K)
@@ -22,6 +23,13 @@ rho_crit = 4e-47
 infile = 'output_M200vals.txt'
 data = np.genfromtxt(outdir+infile, dtype = 'f8')
 M_DM = data[0] * 1e57
+
+infile = 'graph_surfden_Data.txt'
+data = np.genfromtxt(outdir+infile, dtype = 'f8')
+rbin_phot = data[:,0]
+
+infile = 'Rhalf.txt'
+Rhalf = np.genfromtxt(outdir+infile, dtype = 'f8')
 
 #infile = 'graph_vLOS_fit.txt'
 infile = 'sigma_DM.txt'
@@ -47,14 +55,19 @@ rhohi = data[:,3][sel]
 rhololo = data[:,4][sel]
 rhohihi = data[:,5][sel]
 
-infile = 'output_bet.txt'
-data = np.genfromtxt(outdir+infile, dtype = 'f8')
-data = data[:,1:8]
-beta = data[:,0][sel]
-betalo = data[:,1][sel]
-betahi = data[:,2][sel]
-betalolo = data[:,3][sel]
-betahihi = data[:,4][sel]
+#infile = 'output_bet.txt'
+infile = './gravsphere-master/My_Data/read_prior.txt'
+data = np.genfromtxt(infile, dtype = 'f8')
+X = data[:,0]
+data = data[:,1]
+approximation_beta = lambda x, x_0, beta_0, beta_inf, n: beta_0 + ( beta_inf - beta_0 ) / ( 1 + (x_0/x)**n )
+(x_0, beta_0, beta_inf, n), _ = fit( approximation_beta , X, data, p0 = [(rbin[-1] + rbin[0]) / 2, 0, 1, 2] )
+data = approximation_beta(rbin, x_0, beta_0, beta_inf, n)
+beta = data/2
+betalo = data/4
+betahi = data*3/4
+betalolo = 0
+betahihi = data
 
 '''
 infile = 'reconstructed_beta_DM.txt'
@@ -85,21 +98,25 @@ m_phaselo = (2*C/A * Qlo/(1-betalo))**(1/3) * 1e6
 m_phaselolo = (2*C/A * Qlolo/(1-betalolo))**(1/3) * 1e6
 m_phasehihi = (2*C/A * Qhihi/(1-betahihi))**(1/3) * 1e6
 
-minerr_ind = np.where((m_phasehi - m_phaselo)/m_phase == min((m_phasehi - m_phaselo)/m_phase))[0][0]
+minerr_ind = np.where(rbin >= rbin_phot[1])[0][0] #np.where((m_phasehi - m_phaselo)/m_phase == min((m_phasehi - m_phaselo)/m_phase))[0][0]
 
 plt.plot(rbin, m_phase, color= 'black')
 plt.fill_between(rbin, m_phaselo, m_phasehi, facecolor = 'black', alpha = 0.66)
 plt.fill_between(rbin, m_phaselolo, m_phasehihi, facecolor = 'black', alpha = 0.33)
 
-plt.axvline(rbin[minerr_ind], label = 'min error')
-
+plt.axvline(rbin[minerr_ind], label = 'estimation radius')
+#plt.xlim(1e-2,1)
+#plt.ylim(1e-1, 1e2)
 plt.loglog()
 plt.legend()
+plt.savefig(outdir + 'mass_phi.pdf')
+
+print(m_phase[minerr_ind])
 
 outfile = 'masses.txt'
 f = open(outdir + outfile, 'w')
 f.write('%f %f %f %f %f\n' % (m_phase[minerr_ind], m_phaselo[minerr_ind], m_phasehi[minerr_ind], m_phaselolo[minerr_ind], m_phasehihi[minerr_ind]))
-f.write('%f %f %f %f %f\n' % (m_phase[0], m_phaselo[0], m_phasehi[0], m_phaselolo[0], m_phasehihi[0]))
+#f.write('%f %f %f %f %f\n' % (m_phase[0], m_phaselo[0], m_phasehi[0], m_phaselolo[0], m_phasehihi[0]))
 f.close()
 #print('min error mass:', m_phase[minerr_ind]*1e6 , '+/- 68%', m_phasehi[minerr_ind]*1e6, '/', m_phaselo[minerr_ind]*1e6, '+/- 95%', m_phasehihi[minerr_ind]*1e6, '/', m_phaselolo[minerr_ind]*1e6)
 
@@ -132,36 +149,36 @@ def estimate_mass_EMF(Q, m_initial):
     
     D_maxwell = lambda m: (2*np.pi)*(4*np.pi) * (Int_maxwell_rp(m) - (m/m_initial)**3 * V_rp(m))
     D_fermi = lambda m: 4*np.pi * M_DM / rho_DM * T_eff**3 * (A / m * integrate.quad(lambda p: p**2 * 1/(np.exp(p)+1), 0, np.log(2*(m/m_initial)**3 - 1))[0] - 1/3 * (m/m_initial)**3 * np.log(2*(m/m_initial)**3 - 1)**3)
-    mass_EMF = root(lambda m: D_fermi(m) - D_maxwell(m), m_initial).x[0]
+    mass_EMF = root(lambda m: D_fermi(m) - D_maxwell(m), m_initial*2).x[0]
     #mass_EMF = root(lambda m: D_fermi(m) - D_maxwell(m), m_initial).x[0]
     return mass_EMF*1e6
 
 vel = np.interp(X,rbin,vel) /3e5 
-beta = np.interp(X,rbin,beta)
+#beta = np.interp(X,rbin,beta)
 mass_EMF = estimate_mass_EMF(Q, m_phase[minerr_ind]*1e-6)
-print('...')
+print(mass_EMF,'...')
 
 vel = np.interp(X,rbin,velhi) /3e5 
-beta = np.interp(X,rbin,betalo)
+#beta = np.interp(X,rbin,betalo)
 mass_EMFlo = estimate_mass_EMF(Qlo, m_phaselo[minerr_ind]*1e-6)
-print('...')
+print(mass_EMFlo, '...')
 
 vel = np.interp(X,rbin,vello) /3e5 
-beta = np.interp(X,rbin,betahi)
+#beta = np.interp(X,rbin,betahi)
 mass_EMFhi = estimate_mass_EMF(Qhi, m_phasehi[minerr_ind]*1e-6)
-print('...')
+print(mass_EMFhi, '...')
 
 vel = np.interp(X,rbin,velhihi) /3e5 
-beta = np.interp(X,rbin,betalolo)
+#beta = np.interp(X,rbin,betalolo)
 mass_EMFlolo = estimate_mass_EMF(Qlolo, m_phaselolo[minerr_ind]*1e-6)
 print('...')
 
-vel = np.interp(X,rbin,vellolo) /3e5 
-beta = np.interp(X,rbin,betahihi)
+#vel = np.interp(X,rbin,vellolo) /3e5 
+beta = np.zeros(len(rbin)) #np.interp(X,rbin,betahihi)
 mass_EMFhihi = estimate_mass_EMF(Qhihi, m_phasehihi[minerr_ind]*1e-6)
 print('...')
 
-outfile = 'masses.txt'
+outfile = 'masses_EMF.txt'
 f = open(outdir + outfile, 'w')
 #print('EMF bound', mass_EMF*1e6, '+/- 68%', mass_EMFhi*1e6,'/', mass_EMFlo*1e6, '+/- 95%', mass_EMFhihi, '/', mass_EMFlolo)
 f.write('%f %f %f %f %f\n' % (mass_EMF, mass_EMFlo, mass_EMFhi, mass_EMFlolo, mass_EMFhihi))
