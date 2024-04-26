@@ -1,15 +1,15 @@
 #####################################################################
-Download_Data = 'yes'
+Download_Data = 'no'
 Data_to_binulator = 'yes'
 Bin_param = 'no'
-gravsphere_param = 'no'
+gravsphere_param = 'yes'
 
 
 
 
 
 
-gal_name = 'Sculptor_Dwarf_Galaxy'
+gal_name = 'Carina_dSph'
 
 
 
@@ -20,7 +20,7 @@ gal_name = 'Sculptor_Dwarf_Galaxy'
 
 
 
-outdir = './gravsphere-master/'
+outdir = './gravsphere-master/My_Data/'
 ########################################################################
 
 import matplotlib.pyplot as plt
@@ -34,6 +34,8 @@ import astropy.units as u
 from astropy.coordinates import SkyCoord
 
 from tqdm import tqdm
+from scipy.optimize import curve_fit as fit
+#from scipy.stats.norm import pdf as gaussian 
 
 if(Download_Data == 'yes'):
     
@@ -44,6 +46,10 @@ if(Download_Data == 'yes'):
     gal_query = Simbad.query_object(gal_name)
     gal_query.to_pandas().to_excel(outdir + gal_name +'_galaxy_properties.xlsx')
     
+    if (gal_query['Distance_unit'] == 'kpc'): koeff = 1
+    if (gal_query['Distance_unit'] == 'Mpc'): koeff = 1e3
+    Distance = gal_query['Distance_distance'] * koeff
+    
     coord = SkyCoord(ra=gal_query['RA'][0], dec=gal_query['DEC'][0], unit=(u.hourangle, u.deg), frame='icrs')
     gal_coord = (u.Quantity(coord.ra, unit = u.hourangle).to(u.deg).value, u.Quantity(coord.dec, unit = u.deg).value)
 
@@ -53,11 +59,11 @@ if(Download_Data == 'yes'):
             cluster_table.id AS "parent galaxy"
             FROM (SELECT oidref, id FROM ident WHERE id = ' """ + gal_name + """ ' ) AS cluster_table,
             basic JOIN h_link ON basic.oid = h_link.child
-            WHERE h_link.parent = cluster_table.oidref; 
+            WHERE h_link.parent = cluster_table.oidref AND membership = 100; 
             """
     result_table =  tap_simbad.search(query)
     
-    Data = pd.DataFrame({'id': result_table['child id'], 'bib': result_table['link_bibcode'] ,'R': result_table['dist'] * 3600, 'Dens': np.array([1 for i in range(len(result_table['child id']))]),\
+    Data = pd.DataFrame({'id': result_table['child id'], 'bib': result_table['link_bibcode'] ,'R': result_table['dist'] * np.pi / 180 * Distance, 'Dens': np.array([1 for i in range(len(result_table['child id']))]),\
                          'vel': result_table['rvz_radvel'], 'vel_err': result_table['rvz_err'], 'vel_bib': result_table['rvz_bibcode'], 'memb_prob': result_table['membership'], 'otype': result_table['otype'], 'coo_bib': result_table['coo_bibcode']})
     Data.sort_values(by = 'R', inplace=True)
     Data.reset_index(drop=True, inplace=True)
@@ -85,6 +91,7 @@ if(Download_Data == 'yes'):
 if (Data_to_binulator == 'yes'):
     Data = pd.read_excel(outdir + gal_name + '.xlsx')
     
+    '''    
     My_Data = pd.DataFrame({'R': Data['R'], 'vel': Data['vel'], 'velerr': Data['vel_err']})
     My_Data['R'] = My_Data['R']
     My_Data.drop(np.where(My_Data['vel'].isnull() == True)[0], inplace=True)
@@ -95,7 +102,7 @@ if (Data_to_binulator == 'yes'):
     plt.ylabel('quantity')    
     plt.savefig(outdir + gal_name + '_hist.pdf') 
     plt.cla()
-    
+
     dgal_kpc = 86.0
     arcsec = 360./2./np.pi * 60. * 60.
     arcmin = arcsec / 60.    
@@ -113,12 +120,14 @@ if (Data_to_binulator == 'yes'):
     plt.xlabel('r, asec')
     plt.ylabel('v, km/s')
     plt.savefig(outdir + gal_name + '.pdf')
-    plt.show()    
-    exit(0)
-
-    ####################################################################################################################
+    plt.show()
+    '''
+    
+    ##################################################################3
     
     Data_phot = pd.DataFrame({ 'R': Data['R'], 'Dens': Data['Dens'] })
+    plt.hist(Data_phot['R'], bins = int(np.sqrt(len(Data_phot['R']))), edgecolor = 'black')
+    plt.savefig(outdir + 'radius_hist.pdf')
     Data_phot.to_csv(outdir + gal_name + '_phot.csv')
     
     Data_spec = pd.DataFrame({'R': Data['R'], 'vel': Data['vel'], 'velerr': Data['vel_err']})
@@ -127,22 +136,34 @@ if (Data_to_binulator == 'yes'):
     Data_spec.drop(np.where(Data_spec['velerr'].isnull() == True)[0], inplace=True)
     Data_spec.reset_index(drop=True, inplace=True)
     Data_spec.to_csv(outdir + gal_name + '_spec.csv')
+    
     plt.scatter(Data_spec['R'], Data_spec['vel'])
     plt.show()
     
-    high = float(input('high perturbation bound = '))
-    low = float(input('low perturbation bound = '))
+    Data = pd.read_excel(outdir + gal_name + '_galaxy_properties.xlsx')
+    Data['N_memb(phot)'] = len(Data_phot['R'])
+    Data['N_memb(spec)'] = len(Data_spec['R'])
     
+    Data['Nibn'] = int(np.sqrt(Data['N_memb(phot)']))
+    Data['Nbin_kin'] = int(np.sqrt(Data['N_memb(spec)']))
+    Data.to_excel(outdir + gal_name + '_galaxy_properties.xlsx')
+    
+    
+    
+    '''
     Data_spec.drop(np.where(Data_spec['vel'] >= high)[0], inplace=True)
     Data_spec.reset_index(drop=True, inplace=True)
     Data_spec.drop(np.where(Data_spec['vel'] <= low)[0], inplace=True)
-    Data_spec.reset_index(drop=True, inplace=True)    
+    Data_spec.reset_index(drop=True, inplace=True)
+    '''
     
+    '''
     vel_sys = np.mean(Data_spec['vel'])
     Data_spec['vel'] = Data_spec['vel'] - vel_sys
     Data_spec.drop(np.where(Data_spec['vel'] - 3 * Data_spec['velerr'] <= 0)[0], inplace=True)
     Data_spec.reset_index(drop=True, inplace=True)   
     Data_spec.to_csv(outdir + gal_name + '_spec.csv')
+    '''
     
 if(Bin_param == 'yes'):
     Data_phot = pd.read_csv(outdir + gal_name + '_phot.csv')
@@ -168,5 +189,3 @@ if(gravsphere_param == 'yes'):
     
     print('dgal_kpc = ', Distance)
     print('Mass = ', M*1e-6, 'e6')
-    
-    
