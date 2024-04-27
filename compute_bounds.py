@@ -8,7 +8,10 @@ from scipy.optimize import root, bisect
 import pandas as pd
 from scipy.optimize import curve_fit as fit
 
-whichgal = 'Fornax_Dwarf_Spheroidal'
+whichgal = 'Z_64-73'
+
+
+bound_radius = 0.0910330364213386
 outdir = './gravsphere-master/results from cluster/' + whichgal + '/CosmoC/'
 
 T_0 = 2.7255 #температура реликтовых фотонов (K)
@@ -98,8 +101,7 @@ m_phaselo = (2*C/A * Qlo/(1-betalo))**(1/3) * 1e6
 m_phaselolo = (2*C/A * Qlolo/(1-betalolo))**(1/3) * 1e6
 m_phasehihi = (2*C/A * Qhihi/(1-betahihi))**(1/3) * 1e6
 
-minerr_ind = np.where(rbin >= rbin_phot[1])[0][0] #np.where((m_phasehi - m_phaselo)/m_phase == min((m_phasehi - m_phaselo)/m_phase))[0][0]
-
+minerr_ind = np.where(rbin >= bound_radius)[0][0] #np.where((m_phasehi - m_phaselo)/m_phase == min((m_phasehi - m_phaselo)/m_phase))[0][0]
 plt.plot(rbin, m_phase, color= 'black')
 plt.fill_between(rbin, m_phaselo, m_phasehi, facecolor = 'black', alpha = 0.66)
 plt.fill_between(rbin, m_phaselolo, m_phasehihi, facecolor = 'black', alpha = 0.33)
@@ -128,29 +130,28 @@ X = rbin #np.linspace(rbin[0],rbin[-1],100)
 
 def estimate_mass_EMF(Q, m_initial):
     Q_int = Q #np.interp(X,rbin,Q)
-    ind_int = minerr_ind #max(np.where(Q_int >= Q[minerr_ind])[0])
+    ind_int = minerr_ind + 1 #max(np.where(Q_int >= Q[minerr_ind])[0])
     #Q_int[np.where(Q_int[:ind_int] < Q_int[ind_int])[0]] = Q_int[ind_int]
-    Q = Q_int[:ind_int+1]/(1-beta[:ind_int+1])
+    Q = Q_int[:ind_int]/(1-beta[:ind_int])
     
     F_maxwell_r = lambda m: Q[:ind_int] * C / m**4
     F_maxwell_p_r = lambda p_r, m: np.exp(-1/2 / m**2 * p_r**2 / vel[:ind_int]**2)
     F_maxwell_p_t = lambda p_t, m: np.exp(-1/2 / m**2 * p_t**2/ (1-beta[:ind_int]) /vel[:ind_int]**2 )
     
-    p_max_r2 = lambda m : -2 * m**2 * vel[:ind_int]**2 * np.log(Q[ind_int]/ Q[:ind_int])
+    p_max_r2 = lambda m : -2 * m**2 * vel[:ind_int]**2 * np.log(Q[ind_int-1]/ Q[:ind_int])
     p_max_t2 = lambda m, p_r: (1-beta[:ind_int])*(p_max_r2(m) - p_r**2)
     
     Int_maxwell_p_t = lambda m, p_r: np.array([integrate.quad(lambda p_t: p_t*F_maxwell_p_t(p_t, m)[i], 0, np.sqrt(p_max_t2(m, p_r)[i]))[0] for i in range(ind_int)])
     Int_maxwell_p_t_p_r = lambda m: np.array([  integrate.quad(lambda p_r: F_maxwell_p_r(p_r, m)[i] * Int_maxwell_p_t(m,p_r)[i], 0, np.sqrt(p_max_r2(m)[i]) )[0] for i in range(ind_int)])
-    Int_maxwell_rp =  lambda m: integrator(X[:ind_int]**2 * F_maxwell_r(m) * Int_maxwell_p_t_p_r(m), X[:ind_int])
+    Int_maxwell_rp =  lambda m: integrator(X[:ind_int]**2 * F_maxwell_r(m) * Int_maxwell_p_t_p_r(m), X[:ind_int]) + X[0]**2 * F_maxwell_r(m)[0] * Int_maxwell_p_t_p_r(m)[0] * X[0]
     
     V_p_t = lambda m, p_r: np.array([integrate.quad(lambda p_t: p_t, 0, np.sqrt(p_max_t2(m, p_r)[i]))[0] for i in range(ind_int)])
     V_p_t_p_r = lambda m: np.array([  integrate.quad(lambda p_r: V_p_t(m,p_r)[i], 0, np.sqrt(p_max_r2(m)[i]) )[0] for i in range(ind_int)])
-    V_rp = lambda m: integrator(X[:ind_int]**2 * V_p_t_p_r(m), X[:ind_int])
+    V_rp = lambda m: integrator(X[:ind_int]**2 * V_p_t_p_r(m), X[:ind_int]) + X[0]**2 * V_p_t_p_r(m)[0] * X[0]
     
     D_maxwell = lambda m: (2*np.pi)*(4*np.pi) * (Int_maxwell_rp(m) - (m/m_initial)**3 * V_rp(m))
     D_fermi = lambda m: 4*np.pi * M_DM / rho_DM * T_eff**3 * (A / m * integrate.quad(lambda p: p**2 * 1/(np.exp(p)+1), 0, np.log(2*(m/m_initial)**3 - 1))[0] - 1/3 * (m/m_initial)**3 * np.log(2*(m/m_initial)**3 - 1)**3)
     mass_EMF = root(lambda m: D_fermi(m) - D_maxwell(m), m_initial*2).x[0]
-    #mass_EMF = root(lambda m: D_fermi(m) - D_maxwell(m), m_initial).x[0]
     return mass_EMF*1e6
 
 vel = np.interp(X,rbin,vel) /3e5 
