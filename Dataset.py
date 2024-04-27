@@ -126,8 +126,14 @@ if (Data_to_binulator == 'yes'):
     ##################################################################3
     
     Data_phot = pd.DataFrame({ 'R': Data['R'], 'Dens': Data['Dens'] })
+    Y, X = np.histogram(Data_phot['R'], bins = int(np.sqrt(len(Data_phot['R']))))
+    ind = np.where(Y >= max(Y)/2)[0][0]
     plt.hist(Data_phot['R'], bins = int(np.sqrt(len(Data_phot['R']))), edgecolor = 'black')
-    plt.savefig(outdir + 'radius_hist.pdf')
+    plt.axvline(X[ind], color = 'red', label = 'r =' + str(X[ind]))
+    plt.axvline(X[ind+1], color = 'green', label = 'r =' + str(X[ind+1]))
+    plt.legend()
+    plt.savefig(outdir + gal_name + '_radius_hist.pdf')    
+
     Data_phot.to_csv(outdir + gal_name + '_phot.csv')
     
     Data_spec = pd.DataFrame({'R': Data['R'], 'vel': Data['vel'], 'velerr': Data['vel_err']})
