@@ -72,18 +72,6 @@ betahi = data*3/4
 betalolo = 0
 betahihi = data
 
-'''
-infile = 'reconstructed_beta_DM.txt'
-data = np.genfromtxt(outdir+infile, dtype = 'f8')
-X = data[:,0]
-bet_int = np.transpose(data[:,1:8])
-beta = np.interp(rbin,X,bet_int[0,:], len(rbin))
-betalo = np.interp(rbin,X,bet_int[1,:], len(rbin))
-betahi = np.interp(rbin,X,bet_int[2,:], len(rbin))
-betalolo = np.interp(rbin,X,bet_int[3,:], len(rbin))
-betahihi = np.interp(rbin,X,bet_int[4,:], len(rbin))
-'''
-
 Q = rho / vel**3 * 8e-33
 Qlo = rholo / velhi**3 * 8e-33
 Qhi = rhohi / vello**3 * 8e-33
