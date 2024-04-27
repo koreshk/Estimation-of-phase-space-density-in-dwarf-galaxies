@@ -1,5 +1,8 @@
 ##### Dark velocity dispersion #####
 from scipy.optimize import curve_fit as fit
+import numpy as np
+from scipy.integrate import simps as integrator
+import matplotlib.pyplot as plt
 
 infile = './My_Data/read_prior.txt'
 data = np.genfromtxt(infile, dtype = 'f8')
@@ -51,11 +54,11 @@ C_hi = 4.3e-6 * np.array([integrator( M_tot_hi[i:]/rbin[i:]**2 * rho[i:] * g_arr
 C_lolo = 4.3e-6 * np.array([integrator( M_tot_lolo[i:]/rbin[i:]**2 * rho[i:] * g_arr[i:] , rbin[i:]) for i in range(len(rbin))])
 C_hihi = 4.3e-6 * np.array([integrator( M_tot_hihi[i:]/rbin[i:]**2 * rho[i:] * g_arr[i:] , rbin[i:]) for i in range(len(rbin))])
 
-sigma_DM = C / g_arr / rho + 4.3e-6 * M_tot[-1] /rbin[-1]
-sigma_DM_lo = C_lo / g_arr / rho + 4.3e-6 * M_tot_lo[-1] /rbin[-1]
-sigma_DM_hi = C_hi / g_arr / rho + 4.3e-6 * M_tot_hi[-1] /rbin[-1]
-sigma_DM_lolo = C_lolo / g_arr / rho + 4.3e-6 * M_tot_lolo[-1] /rbin[-1]
-sigma_DM_hihi = C_hihi / g_arr / rho + 4.3e-6 * M_tot_hihi[-1] /rbin[-1]
+sigma_DM = C / g_arr / rho + M_tot[0] / rbin[0] * 4.3e-6 * rho[0]/rho * g_arr[0]/g_arr
+sigma_DM_lo = C_lo / g_arr_hi / rho_hi + M_tot_lo[0] / rbin[0] * 4.3e-6 * rho[0]/rho_hi * g_arr[0]/g_arr_hi
+sigma_DM_hi = C_hi / g_arr_lo / rho_lo + M_tot_hi[0] / rbin[0] * 4.3e-6 * rho[0]/rho_lo * g_arr[0]/g_arr_lo
+sigma_DM_lolo = C_lolo / g_arr_hihi / rho_hihi + M_tot_lolo[0] / rbin[0] * 4.3e-6 * rho[0]/rho_hihi * g_arr[0]/g_arr_hihi
+sigma_DM_hihi = C_hihi / g_arr_lolo / rho_lolo + M_tot_hihi[0] / rbin[0] * 4.3e-6 * rho[0]/rho_lolo * g_arr[0]/g_arr_lolo
 
 fig = plt.figure(figsize=(figx,figy))
 ax = plt.gca()
