@@ -1,5 +1,17 @@
 Galaxy, mass/kev, 1sl, 1su, 2sl, 2su
-Fornax Dwarf Spheroidal, 0.755517, 0.489803, 1.040555, 0.322393, 1.353432
-Sculptor Dwarf Galaxy, 1.510442, 0.962416, 2.190172, 0.553101, 3.159444
-Leo I, 1.021757, 0.672325, 1.473436, 0.370480, 2.102156
-Carina dSph, 1.622881, 0.755586, 2.637621, 0.363688, 3.786397
+Fornax Dwarf Spheroidal, 0.958139, 0.786085, 1.160293, 0.639473, 1.430440
+Fornax Dwarf Spheroidal(gravsphere repo), 0.448483, 0.348459, 0.620866, 0.286820, 0.884211
+Fornax Dwarf Spheroidal(J.Alvey data), 0.555594(0.726279), 0.337039(0.391712), 0.781427(1.370187), 0.165347(0.157021), 1.129944(3.134664)
+Fornax Dwarf Spheroidal(J.Alvey data with sigma_DM calc), 0.593609(0.783917), 0.502300(0.620948), 0.750308(1.085436), 0.432162(0.514425), 1.003931(1.681170)
+Sculptor Dwarf Galaxy, 
+Sculptor Dwarf Galaxy(gravsphere repo),
+Sculptor Dwarf Galaxy(J.Alvey data),
+Sculptor Dwarf Galaxy(J.Alvey data with sigma_DM calc),
+Leo I, 
+Leo I(gravsphere repo), 
+Leo I(J.Alvey data), 
+Leo I(J.Alvey data with sigma_DM calc), 
+Carina dSph, 
+Carina dSph(gravsphere repo), 
+Carina dSph(J.Alvey data), 
+Carina dSph(J.Alvey data with sigma_DM calc), 
