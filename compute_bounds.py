@@ -8,11 +8,11 @@ from scipy.optimize import root, bisect
 import pandas as pd
 from scipy.optimize import curve_fit as fit
 
-whichgal = 'Z_64-73'
+whichgal = 'Carina_dSph'
 
 
-bound_radius = 0.0910330364213386
-outdir = './gravsphere-master/results from cluster/' + whichgal + '/CosmoC/'
+bound_radius = (0.00746387879714084 + 0.09711613640257519)/2
+outdir = './gravsphere-master/results from cluster/' + whichgal + '(gravsphere repo)' + '/CosmoC/'
 
 T_0 = 2.7255 #температура реликтовых фотонов (K)
 k = 8.62e-5 # eV/K
@@ -22,10 +22,19 @@ G = 1/M_pl**2
 g = 2
 rho_DM = 1e-45 #GeV^4
 rho_crit = 4e-47
+'''
+infile = 'output_M.txt'
+data = np.genfromtxt(outdir+infile, dtype = 'f8')
+rbin = data[:,0]
+M_int = np.transpose(data[:,1:8])
+M_DM = M_int[0,-1]
+'''
 
+#
 infile = 'output_M200vals.txt'
 data = np.genfromtxt(outdir+infile, dtype = 'f8')
 M_DM = data[0] * 1e57
+
 
 infile = 'graph_surfden_Data.txt'
 data = np.genfromtxt(outdir+infile, dtype = 'f8')
@@ -33,9 +42,11 @@ rbin_phot = data[:,0]
 
 infile = 'Rhalf.txt'
 Rhalf = np.genfromtxt(outdir+infile, dtype = 'f8')
+#
 
 #infile = 'graph_vLOS_fit.txt'
 infile = 'sigma_DM.txt'
+#infile = 'output_sigr_DM.txt'
 data = np.genfromtxt(outdir+infile, dtype = 'f8')
 rbin = data[:,0]
 sigp_int = np.transpose(data[:,1:8])
@@ -59,18 +70,14 @@ rhololo = data[:,4][sel]
 rhohihi = data[:,5][sel]
 
 #infile = 'output_bet.txt'
-infile = './gravsphere-master/My_Data/read_prior.txt'
+infile = 'gravsphere-master/My_Data/reconstructed_beta_DM.txt'
 data = np.genfromtxt(infile, dtype = 'f8')
 X = data[:,0]
-data = data[:,1]
-approximation_beta = lambda x, x_0, beta_0, beta_inf, n: beta_0 + ( beta_inf - beta_0 ) / ( 1 + (x_0/x)**n )
-(x_0, beta_0, beta_inf, n), _ = fit( approximation_beta , X, data, p0 = [(rbin[-1] + rbin[0]) / 2, 0, 1, 2] )
-data = approximation_beta(rbin, x_0, beta_0, beta_inf, n)
-beta = data/2
-betalo = data/4
-betahi = data*3/4
-betalolo = 0
-betahihi = data
+beta = np.interp(rbin, X, data[:,1])
+betalo = np.interp(rbin, X, data[:,2])
+betahi = np.interp(rbin, X, data[:,3])
+betalolo = np.interp(rbin, X, data[:,4])
+betahihi = np.interp(rbin, X, data[:,5])
 
 Q = rho / vel**3 * 8e-33
 Qlo = rholo / velhi**3 * 8e-33
@@ -80,7 +87,7 @@ Qhihi = rhohihi / vellolo**3 * 8e-33
 
 #___Параметры без погрешности___
 C = (1/(2*math.pi))**(3/2)
-A = g * 11.3 / ( 2*math.pi )**3 * 1e-9
+A = 11.16 / ( 2*math.pi )**3 * 1e-9
 
 #Ограничение из фазовой плотности#
 m_phase = (2*C/A * Q/(1-beta))**(1/3) * 1e6
@@ -106,7 +113,7 @@ print(m_phase[minerr_ind])
 outfile = 'masses.txt'
 f = open(outdir + outfile, 'w')
 f.write('%f %f %f %f %f\n' % (m_phase[minerr_ind], m_phaselo[minerr_ind], m_phasehi[minerr_ind], m_phaselolo[minerr_ind], m_phasehihi[minerr_ind]))
-#f.write('%f %f %f %f %f\n' % (m_phase[0], m_phaselo[0], m_phasehi[0], m_phaselolo[0], m_phasehihi[0]))
+f.write('%f %f %f %f %f\n' % (m_phase[0], m_phaselo[0], m_phasehi[0], m_phaselolo[0], m_phasehihi[0]))
 f.close()
 #print('min error mass:', m_phase[minerr_ind]*1e6 , '+/- 68%', m_phasehi[minerr_ind]*1e6, '/', m_phaselo[minerr_ind]*1e6, '+/- 95%', m_phasehihi[minerr_ind]*1e6, '/', m_phaselolo[minerr_ind]*1e6)
 
