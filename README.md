@@ -12,5 +12,5 @@ tqdm 4.66.1
 
 To calculate sigma_DM small updates in gravsphere code have been made:
  - functions.py added: sigma_DM_vs, beta_DM, betaf_DM
- - gravsphere.py added: sigma_DM_fit, betpras_DM
+ - gravsphere.py added: sigma_DM_fit, betpras_DM\
 (the original code please see here https://github.com/justinread/gravsphere)
