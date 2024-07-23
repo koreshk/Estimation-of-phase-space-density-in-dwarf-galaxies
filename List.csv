@@ -1,4 +1,4 @@
-Name,RA,DEC,Coordinate reference,Distance,[Distance unit],Distance reference,Flux(V) [Vega mag],Flux reference,Number of members (photometric),Number of members (kinematic),Nbin,Nbinkin,Mass [Msun],Bound radius [kpc]
+Name,RA(ICRS) [h:m:s],DEC(ICRS) [d:m:s],Coordinate reference,Distance,[Distance unit],Distance reference,Flux(V) [Vega mag],Flux reference,Number of members (photometric),Number of members (kinematic),Nbin,Nbinkin,Mass [Msun],Bound radius [kpc]
 Andromeda V,01 10 17.1,+47 37 41,2003A&A...412...45P,0.81,Mpc,2018MNRAS.479.4136K,15.30000019,2012AJ....144....4M,94,94,9,9,0.017199774328832282 e6,0.11514
 Aquarius Dwarf,20 46 51.7,-12 50 54,2003A&A...412...45P,0.94,Mpc,2011ApJS..192....6L,14.82999992,2014MNRAS.445..881C,176,70,13,8,0.03571153557483068 e6,0.07906
 Bootes Dwarf Spheroidal Galaxy,14 00 00.0,+14 30 00,2013AJ....146...46K,66,kpc,2020ApJ...893...47D,12.80000019,2012AJ....144....4M,88,55,9,7,0.00114193289096774 e6,0.07906
