@@ -8,7 +8,8 @@ astroquery 0.4.6\
 https://astroquery.readthedocs.io/en/latest/simbad/simbad.html) \
 pyvo 1.5\
 astropy 6.0.0\
-tqdm 4.66.1
+tqdm 4.66.1\
+scipy 1.10.1
 
 To calculate sigma_DM small updates in gravsphere code had been made:
  - functions.py added: sigma_DM_vs, beta_DM, betaf_DM
