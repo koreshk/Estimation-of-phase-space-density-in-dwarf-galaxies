@@ -1,20 +1,19 @@
 import matplotlib.pyplot as plt
 import numpy as np
-import math
 from scipy import integrate
 from scipy.integrate import simps as integrator
-from numpy import pi
 from scipy.optimize import root, bisect
-import pandas as pd
-from scipy.optimize import curve_fit as fit
+from scipy.special import erf as Erf, erfi as Erfi
 
-whichgal = 'Carina_dSph'
+from gravsphere_initialise_CVnI import *
+from figures import *
 
+whichgal = 'Z_126-111'
+bound_radius = 0.065513
 
-bound_radius = (0.00746387879714084 + 0.09711613640257519)/2
-outdir = './gravsphere-master/results from cluster/' + whichgal + '(gravsphere repo)' + '/CosmoC/'
+outdir = './gravsphere-master/results from cluster/' + whichgal + '/' # + '/CosmoC/'
 
-T_0 = 2.7255 #температура реликтовых фотонов (K)
+T_0 = 2.7255 #K
 k = 8.62e-5 # eV/K
 T_eff =(4/11)**(1/3) * T_0 *k*1e-9 #GeV
 M_pl = 1.2e19 #GeV
@@ -22,31 +21,8 @@ G = 1/M_pl**2
 g = 2
 rho_DM = 1e-45 #GeV^4
 rho_crit = 4e-47
-'''
-infile = 'output_M.txt'
-data = np.genfromtxt(outdir+infile, dtype = 'f8')
-rbin = data[:,0]
-M_int = np.transpose(data[:,1:8])
-M_DM = M_int[0,-1]
-'''
 
-#
-infile = 'output_M200vals.txt'
-data = np.genfromtxt(outdir+infile, dtype = 'f8')
-M_DM = data[0] * 1e57
-
-
-infile = 'graph_surfden_Data.txt'
-data = np.genfromtxt(outdir+infile, dtype = 'f8')
-rbin_phot = data[:,0]
-
-infile = 'Rhalf.txt'
-Rhalf = np.genfromtxt(outdir+infile, dtype = 'f8')
-#
-
-#infile = 'graph_vLOS_fit.txt'
-infile = 'sigma_DM.txt'
-#infile = 'output_sigr_DM.txt'
+infile = 'output_sigma_DM.txt'
 data = np.genfromtxt(outdir+infile, dtype = 'f8')
 rbin = data[:,0]
 sigp_int = np.transpose(data[:,1:8])
@@ -69,9 +45,8 @@ rhohi = data[:,3][sel]
 rhololo = data[:,4][sel]
 rhohihi = data[:,5][sel]
 
-#infile = 'output_bet.txt'
-infile = 'gravsphere-master/My_Data/reconstructed_beta_DM.txt'
-data = np.genfromtxt(infile, dtype = 'f8')
+infile = 'output_beta_DM.txt'
+data = np.genfromtxt(outdir + infile, dtype = 'f8')
 X = data[:,0]
 beta = np.interp(rbin, X, data[:,1])
 betalo = np.interp(rbin, X, data[:,2])
@@ -86,8 +61,8 @@ Qlolo = rhololo / velhihi**3 * 8e-33
 Qhihi = rhohihi / vellolo**3 * 8e-33
 
 #___Параметры без погрешности___
-C = (1/(2*math.pi))**(3/2)
-A = 11.16 / ( 2*math.pi )**3 * 1e-9
+C = (1/(2*np.pi))**(3/2)
+A = 11.16 / ( 2*np.pi )**3 * 1e-9
 
 #Ограничение из фазовой плотности#
 m_phase = (2*C/A * Q/(1-beta))**(1/3) * 1e6
@@ -97,87 +72,98 @@ m_phaselolo = (2*C/A * Qlolo/(1-betalolo))**(1/3) * 1e6
 m_phasehihi = (2*C/A * Qhihi/(1-betahihi))**(1/3) * 1e6
 
 minerr_ind = np.where(rbin >= bound_radius)[0][0] #np.where((m_phasehi - m_phaselo)/m_phase == min((m_phasehi - m_phaselo)/m_phase))[0][0]
+print('bound radius:', rbin[minerr_ind])
+
+fig = plt.figure(figsize=(figx*1.2,figy))
+ax = fig.add_subplot(111)
+for axis in ['top','bottom','left','right']:
+    ax.spines[axis].set_linewidth(mylinewidth)
+plt.xticks(fontsize=myfontsize)
+plt.yticks(fontsize=myfontsize)
+
 plt.plot(rbin, m_phase, color= 'black')
 plt.fill_between(rbin, m_phaselo, m_phasehi, facecolor = 'black', alpha = 0.66)
 plt.fill_between(rbin, m_phaselolo, m_phasehihi, facecolor = 'black', alpha = 0.33)
 
-plt.axvline(rbin[minerr_ind], label = 'estimation radius')
+plt.axvline(rbin[minerr_ind], label = 'bound radius')
 #plt.xlim(1e-2,1)
 #plt.ylim(1e-1, 1e2)
 plt.loglog()
 plt.legend()
-plt.savefig(outdir + 'mass_phi.pdf')
+plt.xlabel(r'$r_{{\rm bound}}\,[{\rm kpc}]$',\
+               fontsize=myfontsize)
+plt.ylabel(r'$m^{(Q)}\,[{\rm keV}]$',\
+               fontsize=myfontsize)
 
-print(m_phase[minerr_ind])
+plt.savefig(outdir + 'mass_Q.pdf')
 
-outfile = 'masses.txt'
+outfile = 'masses_Q.txt'
 f = open(outdir + outfile, 'w')
 f.write('%f %f %f %f %f\n' % (m_phase[minerr_ind], m_phaselo[minerr_ind], m_phasehi[minerr_ind], m_phaselolo[minerr_ind], m_phasehihi[minerr_ind]))
-f.write('%f %f %f %f %f\n' % (m_phase[0], m_phaselo[0], m_phasehi[0], m_phaselolo[0], m_phasehihi[0]))
+#f.write('%f %f %f %f %f\n' % (m_phase[0], m_phaselo[0], m_phasehi[0], m_phaselolo[0], m_phasehihi[0]))
 f.close()
 #print('min error mass:', m_phase[minerr_ind]*1e6 , '+/- 68%', m_phasehi[minerr_ind]*1e6, '/', m_phaselo[minerr_ind]*1e6, '+/- 95%', m_phasehihi[minerr_ind]*1e6, '/', m_phaselolo[minerr_ind]*1e6)
 
-plt.savefig(outdir+'mass_phi.pdf',bbox_inches='tight')
 print('Q mass estimated.')
 
+ind_int = minerr_ind
 rbin = rbin * 1.6e35
-X = rbin #np.linspace(rbin[0],rbin[-1],100)
+X = rbin[ind_int:]
+plt.cla()
 
 def estimate_mass_EMF(Q, m_initial):
-    Q_int = Q #np.interp(X,rbin,Q)
-    ind_int = minerr_ind + 1 #max(np.where(Q_int >= Q[minerr_ind])[0])
-    #Q_int[np.where(Q_int[:ind_int] < Q_int[ind_int])[0]] = Q_int[ind_int]
-    Q = Q_int[:ind_int]/(1-beta[:ind_int])
+    m_max = lambda m: (Q[0]/Q[-1])**(1/4)*m
+    p_max = lambda m: np.log( Q/Q[0] * (m_max(m)/m)**4 )
+    e_p_max = lambda m: Q/Q[0] * (m_max(m)/m)**4
     
-    F_maxwell_r = lambda m: Q[:ind_int] * C / m**4
-    F_maxwell_p_r = lambda p_r, m: np.exp(-1/2 / m**2 * p_r**2 / vel[:ind_int]**2)
-    F_maxwell_p_t = lambda p_t, m: np.exp(-1/2 / m**2 * p_t**2/ (1-beta[:ind_int]) /vel[:ind_int]**2 )
+    def D_maxwell(m):
+        x_max = np.where(Q/Q[0] * (m_max(m)/m)**4 >= 1)
+        Int = Q[x_max]*C/m**4 * 4*np.pi*X[x_max]**2 * np.pi**(3/2) * np.sqrt(2) * m**3*(1-beta[x_max]) * vel[x_max]**3 * ( Erf(np.sqrt(p_max(m)[x_max])) - np.sqrt(1/beta[x_max]-1)*Erfi(np.sqrt(beta[x_max])/np.sqrt(1-beta[x_max])*np.sqrt(p_max(m)[x_max])) * e_p_max(m)[x_max]**(-1/(1-beta[x_max])) )
+        V = C*Q[0]/m_max(m)**4 * 4*np.pi*X[x_max]**2 * np.pi/3 * 2**(3/2) * m**3 * (1-beta[x_max]) * vel[x_max]**3 * p_max(m)[x_max]**(3/2)
+        return integrator(Int-V) + (Int[0]-V[0])*X[0]
+        
+    N = lambda m: ( integrator(Q*C/m**4 * 4*np.pi*X**2 * np.pi**(3/2) * np.sqrt(2) * m**3*(1-beta) * vel**3) + Q[0]*C/m**4 * 4*np.pi*X[0]**3 * np.pi**(3/2) * np.sqrt(2) * m**3*(1-beta[0]) * vel[0]**3)/(4*np.pi * T_eff**3 * (A / m * 1.80309))
+    D_fermi = lambda m: 4*np.pi*N(m) * T_eff**3 * (A / m * integrate.quad(lambda p: p**2 * 1/(np.exp(p)+1), 0, np.log( 2 * m_max(m)**4/m/m_initial**3 - 1 ))[0]) - 1/3 * C*Q[0]/m_max(m)**4 * np.log( 2 * m_max(m)**4/m/m_initial**3 - 1 )**3
+    mass_EMF = bisect(lambda m: D_fermi(m) - D_maxwell(m), m_initial, 10*m_initial)
     
-    p_max_r2 = lambda m : -2 * m**2 * vel[:ind_int]**2 * np.log(Q[ind_int-1]/ Q[:ind_int])
-    p_max_t2 = lambda m, p_r: (1-beta[:ind_int])*(p_max_r2(m) - p_r**2)
-    
-    Int_maxwell_p_t = lambda m, p_r: np.array([integrate.quad(lambda p_t: p_t*F_maxwell_p_t(p_t, m)[i], 0, np.sqrt(p_max_t2(m, p_r)[i]))[0] for i in range(ind_int)])
-    Int_maxwell_p_t_p_r = lambda m: np.array([  integrate.quad(lambda p_r: F_maxwell_p_r(p_r, m)[i] * Int_maxwell_p_t(m,p_r)[i], 0, np.sqrt(p_max_r2(m)[i]) )[0] for i in range(ind_int)])
-    Int_maxwell_rp =  lambda m: integrator(X[:ind_int]**2 * F_maxwell_r(m) * Int_maxwell_p_t_p_r(m), X[:ind_int]) + X[0]**2 * F_maxwell_r(m)[0] * Int_maxwell_p_t_p_r(m)[0] * X[0]
-    
-    V_p_t = lambda m, p_r: np.array([integrate.quad(lambda p_t: p_t, 0, np.sqrt(p_max_t2(m, p_r)[i]))[0] for i in range(ind_int)])
-    V_p_t_p_r = lambda m: np.array([  integrate.quad(lambda p_r: V_p_t(m,p_r)[i], 0, np.sqrt(p_max_r2(m)[i]) )[0] for i in range(ind_int)])
-    V_rp = lambda m: integrator(X[:ind_int]**2 * V_p_t_p_r(m), X[:ind_int]) + X[0]**2 * V_p_t_p_r(m)[0] * X[0]
-    
-    D_maxwell = lambda m: (2*np.pi)*(4*np.pi) * (Int_maxwell_rp(m) - (m/m_initial)**3 * V_rp(m))
-    D_fermi = lambda m: 4*np.pi * M_DM / rho_DM * T_eff**3 * (A / m * integrate.quad(lambda p: p**2 * 1/(np.exp(p)+1), 0, np.log(2*(m/m_initial)**3 - 1))[0] - 1/3 * (m/m_initial)**3 * np.log(2*(m/m_initial)**3 - 1)**3)
-    mass_EMF = root(lambda m: D_fermi(m) - D_maxwell(m), m_initial*2).x[0]
-    return mass_EMF*1e6
+    return mass_EMF
 
-vel = np.interp(X,rbin,vel) /3e5 
-#beta = np.interp(X,rbin,beta)
-mass_EMF = estimate_mass_EMF(Q, m_phase[minerr_ind]*1e-6)
-print(mass_EMF,'...')
 
-vel = np.interp(X,rbin,velhi) /3e5 
-#beta = np.interp(X,rbin,betalo)
-mass_EMFlo = estimate_mass_EMF(Qlo, m_phaselo[minerr_ind]*1e-6)
-print(mass_EMFlo, '...')
 
-vel = np.interp(X,rbin,vello) /3e5 
-#beta = np.interp(X,rbin,betahi)
-mass_EMFhi = estimate_mass_EMF(Qhi, m_phasehi[minerr_ind]*1e-6)
-print(mass_EMFhi, '...')
+vel = vel[ind_int:] /3e5 
+beta = beta[ind_int:]
+Q_a = Q[ind_int:]/(1-beta)
 
-vel = np.interp(X,rbin,velhihi) /3e5 
-#beta = np.interp(X,rbin,betalolo)
-mass_EMFlolo = estimate_mass_EMF(Qlolo, m_phaselolo[minerr_ind]*1e-6)
-print('...')
+mass_EMF = estimate_mass_EMF(Q_a, m_phase[minerr_ind]*1e-6)
 
-#vel = np.interp(X,rbin,vellolo) /3e5 
-beta = np.zeros(len(rbin)) #np.interp(X,rbin,betahihi)
-mass_EMFhihi = estimate_mass_EMF(Qhihi, m_phasehihi[minerr_ind]*1e-6)
-print('...')
+vel = velhi[ind_int:] /3e5 
+beta = betalo[ind_int:]
+Q_a = Qlo[ind_int:]/(1-beta)
+
+mass_EMFlo = estimate_mass_EMF(Q_a, m_phaselo[minerr_ind]*1e-6)
+
+vel = vello[ind_int:] /3e5 
+beta = betahi[ind_int:]
+Q_a = Qhi[ind_int:]/(1-beta)
+
+mass_EMFhi = estimate_mass_EMF(Q_a, m_phasehi[minerr_ind]*1e-6)
+
+vel = velhihi[ind_int:] /3e5 
+beta = betalolo[ind_int:]
+Q_a = Qlolo[ind_int:]/(1-beta)
+
+mass_EMFlolo = estimate_mass_EMF(Q_a, m_phaselolo[minerr_ind]*1e-6)
+
+vel = vellolo[ind_int:] /3e5
+beta = betahihi[ind_int:]
+Q_a = Qhihi[ind_int:]/(1-beta)
+
+mass_EMFhihi = estimate_mass_EMF(Q_a, m_phasehihi[minerr_ind]*1e-6)
 
 outfile = 'masses_EMF.txt'
 f = open(outdir + outfile, 'w')
 #print('EMF bound', mass_EMF*1e6, '+/- 68%', mass_EMFhi*1e6,'/', mass_EMFlo*1e6, '+/- 95%', mass_EMFhihi, '/', mass_EMFlolo)
-f.write('%f %f %f %f %f\n' % (mass_EMF, mass_EMFlo, mass_EMFhi, mass_EMFlolo, mass_EMFhihi))
+f.write('%f %f %f %f %f\n' % (mass_EMF*1e6, mass_EMFlo*1e6, mass_EMFhi*1e6, mass_EMFlolo*1e6, mass_EMFhihi*1e6))
 f.close()
 
 print('EMF mass estimated.')
