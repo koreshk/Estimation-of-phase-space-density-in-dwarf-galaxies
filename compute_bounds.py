@@ -123,7 +123,7 @@ def estimate_mass_EMF(Q, m_initial):
         return integrator(Int-V) + (Int[0]-V[0])*X[0]
         
     N = lambda m: ( integrator(Q*C/m**4 * 4*np.pi*X**2 * np.pi**(3/2) * np.sqrt(2) * m**3*(1-beta) * vel**3) + Q[0]*C/m**4 * 4*np.pi*X[0]**3 * np.pi**(3/2) * np.sqrt(2) * m**3*(1-beta[0]) * vel[0]**3)/(4*np.pi * T_eff**3 * (A / m * 1.80309))
-    D_fermi = lambda m: 4*np.pi*N(m) * T_eff**3 * (A / m * integrate.quad(lambda p: p**2 * 1/(np.exp(p)+1), 0, np.log( 2 * m_max(m)**4/m/m_initial**3 - 1 ))[0]) - 1/3 * C*Q[0]/m_max(m)**4 * np.log( 2 * m_max(m)**4/m/m_initial**3 - 1 )**3
+    D_fermi = lambda m: 4*np.pi*N(m) * T_eff**3 * (A / m * integrate.quad(lambda p: p**2 * 1/(np.exp(p)+1), 0, np.log( 2 * m_max(m)**4/m/m_initial**3 - 1 ))[0] - 1/3 * C*Q[0]/m_max(m)**4 * np.log( 2 * m_max(m)**4/m/m_initial**3 - 1 )**3)
     mass_EMF = bisect(lambda m: D_fermi(m) - D_maxwell(m), m_initial, 10*m_initial)
     
     return mass_EMF
